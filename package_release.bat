@@ -19,12 +19,13 @@ if exist "%ZIP_NAME%" del "%ZIP_NAME%"
 echo [2/5] Building Release / 正在编译...
 :: -p:ExcludeWhisperModels=true: Skip copying large .bin files
 :: -p:DebugType=None: Do not generate .pdb files (Debug symbols from Step 102 request: not needed)
-dotnet publish LiveTranslator.csproj ^
+dotnet publish MoeLiveTranslator.csproj ^
   -c Release ^
   -r win-x64 ^
   --self-contained false ^
   -p:PublishSingleFile=true ^
-  -p:IncludeNativeLibrariesForSelfExtract=true ^
+  -p:IncludeNativeLibrariesForSelfExtract=false ^
+  -p:ExcludeNativeLibraries=true ^
   -p:ExcludeWhisperModels=true ^
   -p:DebugType=None ^
   -p:DebugSymbols=false ^
@@ -49,6 +50,18 @@ copy /Y PROMPTS.md "%OUT_DIR%\" > nul
 del /Q "%OUT_DIR%\*.pdb" 2>nul
 :: Remove the created PDB for the app itself if dotnet publish made it despite flags
 del /Q "%OUT_DIR%\MoeLiveTranslator.pdb" 2>nul
+
+:: 4. Cleanup non-Windows runtimes (junk from NuGet packages)
+:: Generic clean
+if exist "%OUT_DIR%\runtimes\linux-x64" rd /s /q "%OUT_DIR%\runtimes\linux-x64"
+if exist "%OUT_DIR%\runtimes\linux-arm64" rd /s /q "%OUT_DIR%\runtimes\linux-arm64"
+if exist "%OUT_DIR%\runtimes\osx-x64" rd /s /q "%OUT_DIR%\runtimes\osx-x64"
+if exist "%OUT_DIR%\runtimes\osx-arm64" rd /s /q "%OUT_DIR%\runtimes\osx-arm64"
+:: Whisper/Vulkan specific clean
+if exist "%OUT_DIR%\runtimes\vulkan\linux-x64" rd /s /q "%OUT_DIR%\runtimes\vulkan\linux-x64"
+if exist "%OUT_DIR%\runtimes\vulkan\linux-arm64" rd /s /q "%OUT_DIR%\runtimes\vulkan\linux-arm64"
+if exist "%OUT_DIR%\runtimes\vulkan\osx-x64" rd /s /q "%OUT_DIR%\runtimes\vulkan\osx-x64"
+if exist "%OUT_DIR%\runtimes\vulkan\osx-arm64" rd /s /q "%OUT_DIR%\runtimes\vulkan\osx-arm64"
 
 echo [4/5] Zipping to %ZIP_NAME% / 正在压缩...
 powershell -Command "Compress-Archive -Path '%OUT_DIR%\*' -DestinationPath '%ZIP_NAME%' -Force"
