@@ -6,7 +6,7 @@
 
 1.  **下载模型** (必做!)
     *   软件运行需要 AI 模型文件（`.bin` 格式）。
-    *   **下载地址**: [Hugging Face - whisper.cpp Models](https://huggingface.co/ggerganov/whisper.cpp/tree/master)
+    *   **下载地址**: [Hugging Face - whisper.cpp Models](https://huggingface.co/ggerganov/whisper.cpp/tree/main)
     *   推荐下载：`ggml-small.bin` ，如果需要更精准的效果，可以下载更大的模型，相应也会占用更多硬件性能。
     *   **存放位置**: 将下载的文件放在 `WhisperModels` 文件夹内。
 
