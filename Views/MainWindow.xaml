@@ -1,0 +1,278 @@
+<Window x:Class="LiveTranslator.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LiveTranslator"
+        xmlns:ctl="clr-namespace:LiveTranslator.Controls"
+        xmlns:vm="clr-namespace:LiveTranslator.ViewModels"
+        mc:Ignorable="d"
+        Title="MoeLiveTranslator" Height="500" Width="800"
+        Background="Transparent"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Foreground="#E0E0E0"
+        Topmost="{Binding IsTopmost}"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown"
+        MouseMove="Window_MouseMove">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32" 
+                      ResizeBorderThickness="4" 
+                      GlassFrameThickness="0" 
+                      CornerRadius="10"/>
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <!-- Miku Green Brush -->
+        <SolidColorBrush x:Key="MikuGreenBrush" Color="#39C5BB"/>
+        <SolidColorBrush x:Key="DarkBgBrush" Color="#121212"/>
+        <SolidColorBrush x:Key="ItemBgBrush" Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="ScrollThumbBrush" Color="#444444"/>
+        <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#39C5BB"/>
+
+        <!-- Custom ScrollBar Style -->
+        <Style x:Key="MinimalScrollBar" TargetType="{x:Type ScrollBar}">
+            <Setter Property="Stylus.IsFlicksEnabled" Value="false"/>
+            <Setter Property="Foreground" Value="{StaticResource ScrollThumbBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ScrollBar}">
+                        <Grid x:Name="GridRoot" Width="8" Background="Transparent">
+                            <Track x:Name="PART_Track" IsDirectionReversed="true" Focusable="false">
+                                <Track.Thumb>
+                                    <Thumb x:Name="Thumb" Background="{StaticResource ScrollThumbBrush}" Style="{DynamicResource ScrollThumbStyle}"/>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0" Focusable="false"/>
+                                </Track.IncreaseRepeatButton>
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0" Focusable="false"/>
+                                </Track.DecreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ScrollThumbStyle" TargetType="{x:Type Thumb}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Thumb}">
+                        <Border x:Name="border" CornerRadius="4" Background="{Binding DataContext.ThemeBrush, RelativeSource={RelativeSource AncestorType=Window}}" Margin="1,0,1,0"/>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter TargetName="border" Property="Background" Value="{Binding DataContext.ThemeBrush, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="true">
+                                <Setter TargetName="border" Property="Background" Value="{Binding DataContext.ThemeBrush, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ScrollViewer Style to apply the ScrollBar -->
+        <Style TargetType="{x:Type ScrollViewer}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ScrollContentPresenter Grid.Column="0"/>
+                            <ScrollBar x:Name="PART_VerticalScrollBar" Grid.Column="1" Value="{TemplateBinding VerticalOffset}" Maximum="{TemplateBinding ScrollableHeight}" ViewportSize="{TemplateBinding ViewportHeight}" Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}" Style="{StaticResource MinimalScrollBar}"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Log Item Template -->
+        <DataTemplate x:Key="LogItemTemplate">
+            <Border Padding="5,1" CornerRadius="8" 
+                    Background="{Binding DataContext.SubtitleBackgroundBrush, RelativeSource={RelativeSource AncestorType=Window}}"
+                    Margin="{Binding DataContext.SubtitleMargin, RelativeSource={RelativeSource AncestorType=Window}}"
+                    MouseLeftButtonDown="Window_MouseLeftButtonDown">
+                <StackPanel>
+                    <!-- Original Text -->
+                    <ctl:OutlinedTextBlock Text="{Binding DisplayOriginal, Mode=OneWay}" 
+                               Fill="{Binding DataContext.OriginalTextBrush, RelativeSource={RelativeSource AncestorType=Window}}"
+                               Stroke="{Binding DataContext.SubtitleStrokeBrush, RelativeSource={RelativeSource AncestorType=Window}}"
+                               StrokeThickness="{Binding DataContext.SubtitleStrokeThickness, RelativeSource={RelativeSource AncestorType=Window}}"
+                               FontSize="{Binding DataContext.OriginalFontSize, RelativeSource={RelativeSource AncestorType=Window}}" 
+                               FontFamily="{Binding DataContext.OriginalFontFamily, RelativeSource={RelativeSource AncestorType=Window}}"
+                               FontWeight="{Binding DataContext.OriginalFontWeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,6"
+                               Effect="{Binding DataContext.SubtitleVisualEffect, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                    
+                    <!-- Translated Text -->
+                    <ctl:OutlinedTextBlock Text="{Binding DisplayTranslated, Mode=OneWay}" 
+                               Fill="{Binding DataContext.TranslatedTextBrush, RelativeSource={RelativeSource AncestorType=Window}}" 
+                               Stroke="{Binding DataContext.SubtitleStrokeBrush, RelativeSource={RelativeSource AncestorType=Window}}"
+                               StrokeThickness="{Binding DataContext.SubtitleStrokeThickness, RelativeSource={RelativeSource AncestorType=Window}}"
+                               FontSize="{Binding DataContext.TranslatedFontSize, RelativeSource={RelativeSource AncestorType=Window}}" 
+                               FontFamily="{Binding DataContext.TranslatedFontFamily, RelativeSource={RelativeSource AncestorType=Window}}"
+                               FontWeight="{Binding DataContext.TranslatedFontWeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                               TextWrapping="Wrap"
+                               Effect="{Binding DataContext.SubtitleVisualEffect, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <ContextMenu x:Key="MainContextMenu" x:Shared="False">
+            <MenuItem Header="Start/Stop Listening" Command="{Binding ToggleListeningCommand}"/>
+            <MenuItem Header="Always on Top" IsCheckable="True" IsChecked="{Binding IsTopmost}"/>
+            <Separator/>
+            <MenuItem Header="Settings" Command="{Binding OpenSettingsCommand}"/>
+            <Separator/>
+            <MenuItem Header="Close" Command="{Binding ExitCommand}"/>
+        </ContextMenu>
+    </Window.Resources>
+
+    <Grid>
+        <!-- Hit Test Layer -->
+        <Grid Background="#01000000"/>
+
+        <!-- Dynamic Background Layer -->
+        <Border Background="#121212" CornerRadius="10" BorderBrush="#333333" BorderThickness="1">
+             <Border.Style>
+                 <Style TargetType="Border">
+                     <Setter Property="Opacity" Value="{Binding WindowOpacity}"/>
+                     <Style.Triggers>
+                         <MultiDataTrigger>
+                             <MultiDataTrigger.Conditions>
+                                 <Condition Binding="{Binding WindowOpacity}" Value="0"/>
+                                 <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"/>
+                             </MultiDataTrigger.Conditions>
+                             <Setter Property="Opacity" Value="0.3"/>
+                         </MultiDataTrigger>
+                     </Style.Triggers>
+                 </Style>
+             </Border.Style>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Background="Transparent" Margin="0,32,0,0">
+            <Grid.ContextMenu>
+                <StaticResource ResourceKey="MainContextMenu"/>
+            </Grid.ContextMenu>
+
+            <ListView x:Name="LogListView" 
+                      ItemsSource="{Binding Logs}"
+                      ItemTemplate="{StaticResource LogItemTemplate}"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                      Margin="10">
+                <ListView.Style>
+                    <Style TargetType="ListView">
+                        <Style.Triggers>
+                             <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                 <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+                             </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.Style>
+                <ListView.ItemContainerStyle>
+                     <Style TargetType="ListViewItem">
+                         <Setter Property="Background" Value="Transparent"/>
+                         <Setter Property="Template">
+                             <Setter.Value>
+                                 <ControlTemplate TargetType="ListViewItem">
+                                     <ContentPresenter/>
+                                 </ControlTemplate>
+                             </Setter.Value>
+                         </Setter>
+                     </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel VerticalAlignment="Bottom"/>
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+            </ListView>
+        </Grid>
+
+        <!-- Overlay Prompt -->
+        <Border Panel.ZIndex="1" 
+                Visibility="{Binding StatusVisibility}" 
+                Background="Transparent"
+                ContextMenu="{StaticResource MainContextMenu}"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                Margin="0,32,0,0">
+            <!-- Removed LeftClick binding to prevent immediate value toggling. Use Double Click in code-behind or rely on Context Menu -->
+            <Grid>
+                 <ProgressBar Value="{Binding AudioLevel}" Maximum="100" Height="2" VerticalAlignment="Top" IsHitTestVisible="False" Background="Transparent" Foreground="{Binding ThemeBrush}" BorderThickness="0" Visibility="{Binding IsListening, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                 <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                     <Grid.Style>
+                         <Style TargetType="Grid">
+                             <Setter Property="Visibility" Value="Visible"/>
+                             <Style.Triggers>
+                                 <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                     <Setter Property="Visibility" Value="Collapsed"/>
+                                 </DataTrigger>
+                             </Style.Triggers>
+                         </Style>
+                     </Grid.Style>
+
+                     <!-- Status Text with Visual Settings -->
+                     <ctl:OutlinedTextBlock Text="{Binding StatusText, Mode=OneWay}" 
+                               Fill="{Binding DataContext.TranslatedTextBrush, RelativeSource={RelativeSource AncestorType=Window}}"
+                               Stroke="{Binding DataContext.SubtitleStrokeBrush, RelativeSource={RelativeSource AncestorType=Window}}"
+                               StrokeThickness="{Binding DataContext.SubtitleStrokeThickness, RelativeSource={RelativeSource AncestorType=Window}}"
+                               FontSize="{Binding DataContext.TranslatedFontSize, RelativeSource={RelativeSource AncestorType=Window}}" 
+                               FontFamily="{Binding DataContext.TranslatedFontFamily, RelativeSource={RelativeSource AncestorType=Window}}"
+                               FontWeight="{Binding DataContext.TranslatedFontWeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
+                               Effect="{Binding DataContext.SubtitleVisualEffect, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                 </Grid>
+
+                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+                     <ctl:OutlinedTextBlock Text="{Binding LoadingStatus}" 
+                                Fill="{Binding DataContext.TranslatedTextBrush, RelativeSource={RelativeSource AncestorType=Window}}"
+                                Stroke="{Binding DataContext.SubtitleStrokeBrush, RelativeSource={RelativeSource AncestorType=Window}}"
+                                StrokeThickness="{Binding DataContext.SubtitleStrokeThickness, RelativeSource={RelativeSource AncestorType=Window}}"
+                                FontSize="{Binding DataContext.TranslatedFontSize, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                FontFamily="{Binding DataContext.TranslatedFontFamily, RelativeSource={RelativeSource AncestorType=Window}}"
+                                FontWeight="{Binding DataContext.TranslatedFontWeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                TextAlignment="Center"
+                                Margin="0,0,0,10"
+                                Effect="{Binding DataContext.SubtitleVisualEffect, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                     <ProgressBar IsIndeterminate="True" Width="150" Height="4" Background="Transparent" BorderThickness="0" Foreground="{Binding ThemeBrush}"/>
+                 </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Title Bar Caption Area (Always on Top) -->
+        <Grid Height="32" VerticalAlignment="Top" Background="Transparent" Panel.ZIndex="100">
+           <Grid.Style>
+               <Style TargetType="Grid">
+                   <Style.Triggers>
+                       <DataTrigger Binding="{Binding IsListening}" Value="True">
+                           <Setter Property="Visibility" Value="Collapsed"/>
+                       </DataTrigger>
+                   </Style.Triggers>
+               </Style>
+           </Grid.Style>
+           <!-- Windows will handle drag via WindowChrome -->
+           <TextBlock Text="MoeLiveTranslator" VerticalAlignment="Center" Margin="15,0,0,0" FontSize="12" Foreground="#666666"/>
+           
+           <!-- Caption Buttons -->
+           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" WindowChrome.IsHitTestVisibleInChrome="True">
+               <Button Content="_" Click="Minimize_Click" Width="46" Height="32" Background="Transparent" BorderThickness="0" Foreground="#888888" FontSize="14"/>
+               <Button Content="✕" Click="Close_Click" Width="46" Height="32" Background="Transparent" BorderThickness="0" Foreground="#888888" FontSize="14"/>
+           </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
